@@ -1,0 +1,6 @@
+{
+  "name": "front-door-worker",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-01",
+  "services": [{ "binding": "CACHE_WORKER", "service": "cache-worker" }]
+}

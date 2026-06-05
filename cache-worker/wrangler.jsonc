@@ -1,0 +1,8 @@
+{
+  "name": "cache-worker",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-01",
+  "workers_dev": false,
+  "cache": { "enabled": true },
+  "r2_buckets": [{ "binding": "SNAPSHOTS", "bucket_name": "cache-worker-snapshots" }]
+}
