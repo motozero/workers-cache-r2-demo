@@ -7,26 +7,8 @@ object, so there is nothing to keep in sync.
 
 ## See it work in 30 seconds (no Cloudflare account needed)
 
-Clone this repo and run the included script. It hits the live reference
-deployment, so no setup is required:
-
-```sh
-./demo.sh
-```
-
-You will see four numbered steps. The proof you are looking for is in Step 2:
-
-- **Step 1** — first call to a fresh path: `cf-cache-status: MISS`, a fresh `x-run-id`.
-- **Step 2** — same URL again: `cf-cache-status: HIT`, the **same** `x-run-id`.
-
-That unchanged `x-run-id` is the headline. The cached worker generates a new
-`x-run-id` on every actual execution. If the same id comes back, the worker
-did not execute — Workers Cache served the response directly.
-
-Steps 3 and 4 sanity-check that the response bodies are byte-identical and that
-a different path is its own cache entry (fresh MISS, different `x-run-id`).
-
-If you prefer raw curl:
+Hit the live reference deployment with the same URL twice. The proof is in the
+second response.
 
 ```sh
 URL="https://front-door-worker.laboratory.workers.dev/anything-$(date +%s)"
@@ -34,10 +16,21 @@ curl -sD - -o /dev/null "$URL" | grep -iE 'cf-cache-status|x-run-id'
 curl -sD - -o /dev/null "$URL" | grep -iE 'cf-cache-status|x-run-id'
 ```
 
-To run the demo against your own deployment after you deploy (see below):
+You will see:
+
+- **First call**: `cf-cache-status: MISS`, a fresh `x-run-id`. The worker ran.
+- **Second call (same URL)**: `cf-cache-status: HIT`, the **same** `x-run-id`. The worker did not run, Workers Cache served the response directly.
+
+That unchanged `x-run-id` is the headline. The cached worker mints a new
+`x-run-id` every time it actually runs. If the same id comes back across calls,
+the worker did not execute.
+
+For per-key isolation, hit a different path and you get a fresh MISS with a
+different `x-run-id`:
 
 ```sh
-FDW=https://front-door-worker.<your-subdomain>.workers.dev ./demo.sh
+URL2="https://front-door-worker.laboratory.workers.dev/something-else-$(date +%s)"
+curl -sD - -o /dev/null "$URL2" | grep -iE 'cf-cache-status|x-run-id'
 ```
 
 ## What this demo shows
@@ -65,8 +58,6 @@ eyeball
 
 ## Layout
 
-- `demo.sh` — runs the four-step proof against the live deployment, or against
-  your own when you set the `FDW` env var.
 - `front-door-worker/` — orchestrator, not cached, builds the canonical key.
 - `cache-worker/` — `cache.enabled`, R2-bound, runs only on a miss. No public
   URL; reachable only via the service binding.
@@ -89,12 +80,6 @@ cd front-door-worker && npx wrangler deploy && cd ..   # then the front door
 ```
 
 ### Test your own deployment
-
-```sh
-FDW=https://front-door-worker.<your-subdomain>.workers.dev ./demo.sh
-```
-
-Or run the raw curls manually:
 
 ```sh
 URL="https://front-door-worker.<your-subdomain>.workers.dev/products/widget"
